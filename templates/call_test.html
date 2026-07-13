@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebRTC Test</title>
+</head>
+<body>
+    <h1>WebRTC Test</h1>
+    <div>
+        <input type="text" id="name" placeholder="Your name">
+        <button onclick="register()">Register</button>
+    </div>
+    <div>
+        <button onclick="startCall('voice')">Voice Call</button>
+        <button onclick="startCall('video')">Video Call</button>
+        <button onclick="hangupCall()">Hangup</button>
+    </div>
+    <video id="local" autoplay muted style="width:200px; border:1px solid #ccc;"></video>
+    <video id="remote" autoplay style="width:200px; border:1px solid #ccc;"></video>
+    <pre id="log" style="height:200px; overflow-y:scroll; border:1px solid #ccc;"></pre>
+
+    <script>
+        const SERVER = window.location.origin;
+        let myName = '';
+        let pc = null;
+        let localStream = null;
+        let callActive = false;
+
+        function log(msg) { document.getElementById('log').textContent += msg + '\n'; }
+
+        async function register() {
+            const name = document.getElementById('name').value.trim();
+            if (!name) return alert('Enter name');
+            myName = name;
+            const res = await fetch(`${SERVER}/register_user`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({username: myName})
+            });
+            if (res.ok) {
+                log(`Registered as ${myName}`);
+                // Start polling
+                setInterval(poll, 1000);
+            } else {
+                alert('Registration failed');
+            }
+        }
+
+        async function poll() {
+            try {
+                const res = await fetch(`${SERVER}/get_messages`);
+                const msgs = await res.json();
+                for (const m of msgs) {
+                    if (m.type === 'sig' && m.username !== myName) {
+                        try {
+                            const data = JSON.parse(m.text);
+                            log(`📨 Received signal: ${JSON.stringify(data)}`);
+                            handleSignal(data, m.username);
+                        } catch(e) {}
+                    }
+                }
+            } catch(e) {}
+        }
+
+        function sendSignal(payload) {
+            fetch(`${SERVER}/send_message`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    username: myName,
+                    text: JSON.stringify(payload),
+                    type: 'sig',
+                    target: 'call'
+                })
+            });
+            log(`📤 Sent signal: ${JSON.stringify(payload)}`);
+        }
+
+        async function startCall(mode) {
+            if (callActive) return;
+            callActive = true;
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === 'video' });
+                document.getElementById('local').srcObject = localStream;
+                pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+                localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+                pc.ontrack = e => { document.getElementById('remote').srcObject = e.streams[0]; log('Remote stream received'); };
+                pc.onicecandidate = e => { if (e.candidate) sendSignal({ candidate: e.candidate, caller: myName }); };
+                pc.oniceconnectionstatechange = () => log('ICE state: ' + pc.iceConnectionState);
+
+                const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: mode === 'video' });
+                await pc.setLocalDescription(offer);
+                sendSignal({ cmd: 'offer', sdp: pc.localDescription, caller: myName, callMode: mode });
+                log('Offer sent');
+            } catch(e) { log('Error: ' + e.message); callActive = false; }
+        }
+
+        async function handleSignal(data, fromUser) {
+            if (!pc) return;
+            if (data.cmd === 'offer') {
+                // Incoming call – auto-answer for testing
+                log(`Incoming call from ${fromUser}`);
+                try {
+                    if (!localStream) {
+                        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: data.callMode === 'video' });
+                        document.getElementById('local').srcObject = localStream;
+                        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+                    }
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                    const answer = await pc.createAnswer({ offerToReceiveAudio: true, offerToReceiveVideo: data.callMode === 'video' });
+                    await pc.setLocalDescription(answer);
+                    sendSignal({ sdp: pc.localDescription });
+                    log('Answer sent');
+                } catch(e) { log('Error answering: ' + e.message); }
+            } else if (data.sdp) {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                log('Remote description set');
+            } else if (data.candidate) {
+                try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); log('Candidate added'); }
+                catch(e) { log('Candidate error: ' + e.message); }
+            } else if (data.cmd === 'hangup') {
+                hangupCall();
+            }
+        }
+
+        function hangupCall() {
+            callActive = false;
+            if (pc) { pc.close(); pc = null; }
+            if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+            document.getElementById('remote').srcObject = null;
+            log('Call ended');
+        }
+    </script>
+</body>
+</html>

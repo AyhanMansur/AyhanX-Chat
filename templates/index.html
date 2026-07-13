@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WhatsApp</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0b141a; color: #e9edef; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        #auth-screen { background: #111b21; padding: 40px 24px; border-radius: 28px; text-align: center; width: 92%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.04); }
+        #auth-screen .logo { font-size: 64px; margin-bottom: 8px; }
+        #auth-screen h2 { font-weight: 600; font-size: 24px; margin-bottom: 4px; }
+        #auth-screen p { color: #8696a0; font-size: 14px; margin-bottom: 24px; }
+        #auth-screen input { width: 100%; height: 52px; background: #2a3942; border: 2px solid transparent; border-radius: 14px; color: #e9edef; padding: 0 16px; font-size: 16px; text-align: center; outline: none; transition: 0.2s; margin-bottom: 16px; }
+        #auth-screen input:focus { border-color: #00a884; }
+        #auth-screen input::placeholder { color: #8696a0; }
+        #auth-screen button { width: 100%; height: 52px; background: #00a884; border: none; border-radius: 14px; color: #0b141a; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        #auth-screen button:hover { background: #008f72; }
+        #auth-screen button:active { transform: scale(0.97); }
+        #chat-screen { display: none; width: 100%; height: 100vh; flex-direction: column; background: #0b141a; position: relative; }
+        .chat-header { background: #202c33; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .chat-header .left { display: flex; align-items: center; gap: 12px; }
+        .chat-header .avatar { width: 40px; height: 40px; background: #2a3942; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #8696a0; }
+        .chat-header .info .name { font-size: 16px; font-weight: 600; }
+        .chat-header .info .sub { font-size: 12px; color: #8696a0; display: flex; align-items: center; gap: 4px; }
+        .chat-header .info .sub .dot { width: 8px; height: 8px; border-radius: 50%; background: #00a884; display: inline-block; }
+        .chat-header .online-badge { background: #2a3942; padding: 4px 14px; border-radius: 20px; font-size: 13px; color: #00a884; }
+        .chat-header .actions { display: flex; gap: 6px; }
+        .chat-header .actions button { background: none; border: none; color: #8696a0; font-size: 20px; cursor: pointer; padding: 6px; border-radius: 50%; transition: 0.2s; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .chat-header .actions button:hover { background: rgba(255,255,255,0.06); }
+        .chat-header .actions button.call-btn { color: #00a884; }
+        #messages-area { flex: 1; padding: 16px 14px 8px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; background: #0b141a; background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDQwMCA0MDAiPjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjMGIxNDFhIi8+PHBhdGggZD0iTTAgMGw0MDAgNDAwTTQwMCAwbC00MDAgNDAwIiBzdHJva2U9IiMxZTJhMzIiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIvPjwvc3ZnPg=='); background-size: 40px 40px; background-blend-mode: overlay; }
+        .msg { max-width: 78%; padding: 6px 12px 7px 12px; font-size: 14.5px; line-height: 1.5; border-radius: 8px; box-shadow: 0 1px 1px rgba(0,0,0,0.2); word-wrap: break-word; animation: msgIn 0.2s ease; position: relative; }
+        @keyframes msgIn { from { opacity: 0; transform: translateY(6px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .msg.sent { align-self: flex-end; background: #005c4b; color: #e9edef; border-top-right-radius: 2px; }
+        .msg.received { align-self: flex-start; background: #202c33; color: #e9edef; border-top-left-radius: 2px; }
+        .msg .sender { font-size: 12px; font-weight: 600; color: #00a884; margin-bottom: 1px; display: block; }
+        .msg .text { margin-bottom: 1px; }
+        .msg .media { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 4px; cursor: pointer; }
+        .msg .file-icon { display: flex; align-items: center; gap: 6px; background: #2a3942; padding: 6px 10px; border-radius: 6px; margin-top: 4px; }
+        .msg .timestamp { font-size: 10px; color: #8696a0; text-align: right; margin-top: 2px; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
+        .msg .timestamp .delete-badge { background: #f15c6d; color: #fff; font-size: 9px; padding: 0 6px; border-radius: 8px; }
+        .msg .delete-btn { display: none; background: none; border: none; color: #f15c6d; font-size: 14px; cursor: pointer; padding: 0 4px; margin-left: 6px; border-radius: 4px; transition: 0.2s; }
+        .msg .delete-btn:hover { background: rgba(241, 92, 109, 0.2); }
+        .msg:hover .delete-btn { display: inline-block; }
+        .input-bar { background: #202c33; padding: 6px 10px 8px 10px; display: flex; gap: 6px; align-items: center; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.04); }
+        .input-bar .attach-btn { background: none; border: none; color: #8696a0; font-size: 22px; cursor: pointer; padding: 4px; border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .input-bar .attach-btn:hover { background: rgba(255,255,255,0.06); }
+        .input-bar input { flex: 1; height: 42px; background: #2a3942; border: none; border-radius: 20px; color: #e9edef; padding: 0 18px; font-size: 15px; outline: none; }
+        .input-bar input::placeholder { color: #8696a0; }
+        .input-bar .send-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: #00a884; color: #0b141a; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .input-bar .send-btn:hover { background: #008f72; }
+        .input-bar .send-btn:active { transform: scale(0.92); }
+        .call-overlay { position: fixed; inset: 0; z-index: 10000; background: #0b141a; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .call-overlay.active { display: flex; }
+        .call-overlay #remoteVideo { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+        .call-overlay #localVideo { width: 110px; height: 155px; object-fit: cover; position: absolute; top: calc(24px + env(safe-area-inset-top)); right: 20px; border: 2px solid #00a884; border-radius: 14px; transform: scaleX(-1); z-index: 10; background: #000; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
+        .call-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; background: linear-gradient(to top, rgba(11,20,26,0.95) 40%, transparent); padding: 40px 24px calc(40px + env(safe-area-inset-bottom)) 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .call-ui .caller-name { font-size: 26px; font-weight: 600; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        .call-ui .call-status { font-size: 14px; color: #8696a0; margin-bottom: 16px; }
+        .call-ui .call-actions { display: flex; gap: 32px; align-items: center; }
+        .call-ui .call-actions button { width: 64px; height: 64px; border-radius: 50%; border: none; font-size: 28px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        .call-ui .call-actions button:active { transform: scale(0.92); }
+        .call-ui .call-actions .btn-hangup { background: #f15c6d; color: #fff; }
+        .call-ui .call-actions .btn-hangup:hover { background: #d94a5a; }
+        .call-ui .call-actions .btn-answer { background: #00a884; color: #0b141a; }
+        .call-ui .call-actions .btn-answer:hover { background: #008f72; }
+        .call-ui .call-actions .btn-mute { background: #2a3942; color: #e9edef; width: 52px; height: 52px; font-size: 22px; }
+        .call-ui .call-actions .btn-mute:hover { background: #3a4a54; }
+        .call-ui .call-actions .btn-mute.muted { background: #f15c6d; color: #fff; }
+        #file-input { display: none; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a3942; border-radius: 4px; }
+        @media (max-width: 480px) { .msg { max-width: 90%; font-size: 14px; } }
+    </style>
+</head>
+<body>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen">
+        <div class="logo">💬</div>
+        <h2>AyhanX-Chat</h2>
+        <p>Choose a name to join the group chat</p>
+        <input type="text" id="username-input" placeholder="Your name..." maxlength="20" autofocus>
+        <button onclick="login()">Join ➜</button>
+    </div>
+
+    <!-- Chat Screen -->
+    <div id="chat-screen">
+        <div class="chat-header">
+            <div class="left">
+                <div class="avatar">👥</div>
+                <div class="info">
+                    <div class="name">Group Chat</div>
+                    <div class="sub">
+                        <span class="dot"></span>
+                        <span id="online-status">0 online</span>
+                    </div>
+                </div>
+            </div>
+            <div class="online-badge" id="online-badge">0</div>
+            <div class="actions">
+                <button class="call-btn" onclick="startCall('voice')" title="Voice call">📞</button>
+                <button class="call-btn" onclick="startCall('video')" title="Video call">📹</button>
+            </div>
+        </div>
+
+        <div id="messages-area"></div>
+
+        <div class="input-bar">
+            <button class="attach-btn" onclick="document.getElementById('file-input').click()">📎</button>
+            <input type="file" id="file-input" accept="image/*,video/*,audio/*,application/*" multiple>
+            <input type="text" id="text-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()">
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <!-- Call Overlay -->
+    <div class="call-overlay" id="callScreen">
+        <video id="remoteVideo" autoplay playsinline></video>
+        <video id="localVideo" autoplay playsinline muted></video>
+        <div class="call-ui">
+            <div class="caller-name" id="callerName">Calling...</div>
+            <div class="call-status" id="callStatus">Connecting securely...</div>
+            <div class="call-actions">
+                <button class="btn-mute" id="muteBtn" onclick="toggleMute()" title="Mute">🔊</button>
+                <button class="btn-hangup" onclick="hangupCall()">📞</button>
+                <button class="btn-answer" id="answerBtn" onclick="answerCall()" style="display:none;">✅</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  STATE
+        // ============================================================
+        const SERVER_URL = window.location.origin;
+        let myName = '';
+        let lastMsgIndex = 0;
+        let messageCache = new Map();
+        let messageElements = new Map();
+        let isMuted = false;
+        let localStream = null;
+        let peerConnection = null;
+        let callType = 'voice';
+        let isCaller = false;
+        let callActive = false;
+        let pendingCandidates = [];
+        let currentCallId = null; // unique ID per call to avoid confusion
+
+        // ----- No STUN – only host candidates (works on local network) -----
+        const rtcConfig = {
+            iceServers: [],
+            iceTransportPolicy: 'all'  // use all candidates (host, server reflexive, relay)
+        };
+
+        // DOM refs
+        const authScreen = document.getElementById('auth-screen');
+        const chatScreen = document.getElementById('chat-screen');
+        const usernameInput = document.getElementById('username-input');
+        const messagesArea = document.getElementById('messages-area');
+        const textInput = document.getElementById('text-input');
+        const onlineStatus = document.getElementById('online-status');
+        const onlineBadge = document.getElementById('online-badge');
+        const fileInput = document.getElementById('file-input');
+        const callScreen = document.getElementById('callScreen');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const localVideo = document.getElementById('localVideo');
+        const callerName = document.getElementById('callerName');
+        const callStatus = document.getElementById('callStatus');
+        const answerBtn = document.getElementById('answerBtn');
+        const muteBtn = document.getElementById('muteBtn');
+
+        // ============================================================
+        //  LOGIN
+        // ============================================================
+        async function login() {
+            const name = usernameInput.value.trim();
+            if (!name) { usernameInput.style.borderColor = '#f15c6d'; setTimeout(() => usernameInput.style.borderColor = 'transparent', 1000); return; }
+            myName = name;
+            try {
+                const res = await fetch(`${SERVER_URL}/register_user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName })
+                });
+                if (res.ok) {
+                    authScreen.style.display = 'none';
+                    chatScreen.style.display = 'flex';
+                    document.title = `WhatsApp — ${myName}`;
+                    await pollMessages(true);
+                    await pollUsers();
+                    setInterval(() => pollMessages(false), 1000);
+                    setInterval(pollUsers, 4000);
+                    setTimeout(() => textInput.focus(), 300);
+                } else {
+                    alert('Name already taken. Try another.');
+                }
+            } catch (e) {
+                alert('Cannot connect to server. Check HTTPS and certificate.');
+                console.error(e);
+            }
+        }
+        usernameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+
+        // ============================================================
+        //  MESSAGES
+        // ============================================================
+        async function pollMessages(initial = false) {
+            try {
+                const res = await fetch(`${SERVER_URL}/get_messages`);
+                const msgs = await res.json();
+
+                if (msgs.length < lastMsgIndex) {
+                    messagesArea.innerHTML = '';
+                    messageCache.clear();
+                    messageElements.clear();
+                    lastMsgIndex = 0;
+                }
+
+                for (let i = lastMsgIndex; i < msgs.length; i++) {
+                    const m = msgs[i];
+
+                    if (m.type === 'delete') {
+                        const deletedId = m.text;
+                        if (messageElements.has(deletedId)) {
+                            const el = messageElements.get(deletedId);
+                            el.remove();
+                            messageElements.delete(deletedId);
+                            messageCache.delete(deletedId);
+                        }
+                        continue;
+                    }
+
+                    if (m.type === 'sig' && m.username !== myName) {
+                        try {
+                            const data = JSON.parse(m.text);
+                            console.log('📨 Signaling received:', data);
+                            handleIncomingSignaling(data, m.username);
+                        } catch(e) {
+                            console.warn('Failed to parse signaling:', e);
+                        }
+                        continue;
+                    }
+
+                    if (m.id && !messageCache.has(m.id)) {
+                        messageCache.set(m.id, m);
+                        renderMessage(m);
+                    } else if (!m.id) {
+                        const key = `${m.username}|${m.timestamp}|${m.text}`;
+                        if (!messageCache.has(key)) {
+                            messageCache.set(key, m);
+                            renderMessage(m);
+                        }
+                    }
+                }
+                lastMsgIndex = msgs.length;
+                if (!initial) scrollToBottom();
+            } catch (e) { /* ignore */ }
+        }
+
+        function renderMessage(m) {
+            const side = m.username === myName ? 'sent' : 'received';
+            const div = document.createElement('div');
+            div.className = `msg ${side}`;
+            div.dataset.id = m.id;
+            const time = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let content = `<span class="sender">${escapeHtml(m.username)}</span>`;
+
+            if (m.type === 'text') {
+                content += `<div class="text">${escapeHtml(m.text)}</div>`;
+            } else if (m.type === 'media' && m.media_url) {
+                const url = m.media_url;
+                const ext = url.split('.').pop().toLowerCase();
+                if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) {
+                    content += `<img class="media" src="${url}" alt="Image" onclick="window.open('${url}')" />`;
+                } else if (['mp4','webm','ogg','mov'].includes(ext)) {
+                    content += `<video class="media" src="${url}" controls></video>`;
+                } else {
+                    content += `<div class="file-icon">📄 <a href="${url}" target="_blank">${escapeHtml(m.text) || 'File'}</a></div>`;
+                }
+            }
+
+            content += `<div class="timestamp">${time} <span class="delete-badge">🗑️ 5m</span>`;
+            if (m.username === myName) {
+                content += `<button class="delete-btn" onclick="deleteMessage('${m.id}')" title="Delete for everyone">✖</button>`;
+            }
+            content += `</div>`;
+            div.innerHTML = content;
+            messagesArea.appendChild(div);
+            messageElements.set(m.id, div);
+        }
+
+        async function deleteMessage(messageId) {
+            if (!confirm('Delete this message for everyone?')) return;
+            try {
+                const res = await fetch(`${SERVER_URL}/delete_message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: messageId, username: myName })
+                });
+                if (res.ok) {
+                    if (messageElements.has(messageId)) {
+                        messageElements.get(messageId).remove();
+                        messageElements.delete(messageId);
+                        messageCache.delete(messageId);
+                    }
+                } else {
+                    const data = await res.json();
+                    alert(data.msg || 'Delete failed.');
+                }
+            } catch (e) {
+                console.error('Delete error', e);
+            }
+        }
+
+        function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+        function scrollToBottom() { setTimeout(() => messagesArea.scrollTop = messagesArea.scrollHeight, 50); }
+
+        // ============================================================
+        //  USERS
+        // ============================================================
+        async function pollUsers() {
+            try {
+                const res = await fetch(`${SERVER_URL}/get_users`);
+                const users = await res.json();
+                const count = users.length;
+                onlineStatus.textContent = `${count} online`;
+                onlineBadge.textContent = count;
+            } catch (e) { /* ignore */ }
+        }
+
+        // ============================================================
+        //  SEND MESSAGE
+        // ============================================================
+        async function sendMessage(textOverride) {
+            let text = textOverride || textInput.value.trim();
+            if (!text && !fileInput.files.length) return;
+
+            if (fileInput.files.length > 0) {
+                for (const file of fileInput.files) {
+                    await uploadAndSendFile(file);
+                }
+                fileInput.value = '';
+                return;
+            }
+
+            if (!text) return;
+            textInput.value = '';
+
+            try {
+                await fetch(`${SERVER_URL}/send_message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, text: text, type: 'text' })
+                });
+            } catch (e) { console.error('Send failed', e); }
+        }
+
+        async function uploadAndSendFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const res = await fetch(`${SERVER_URL}/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    await fetch(`${SERVER_URL}/send_message`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: myName,
+                            text: file.name,
+                            type: 'media',
+                            media_url: data.url
+                        })
+                    });
+                } else {
+                    alert('Upload failed.');
+                }
+            } catch (e) {
+                console.error('Upload error', e);
+                alert('Upload failed.');
+            }
+        }
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) sendMessage();
+        });
+
+        // ============================================================
+        //  WEBRTC CALL - SIMPLIFIED & LOGGED
+        // ============================================================
+        function sendSignal(payload) {
+            const msg = {
+                username: myName,
+                text: JSON.stringify(payload),
+                type: 'sig',
+                target: 'call'
+            };
+            fetch(`${SERVER_URL}/send_message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(msg)
+            }).catch(e => console.error('Signal send failed', e));
+        }
+
+        function generateCallId() {
+            return `${myName}-${Date.now()}`;
+        }
+
+        async function startCall(mode) {
+            if (callActive) {
+                alert('Call already in progress.');
+                return;
+            }
+            callActive = true;
+            callType = mode;
+            isCaller = true;
+            currentCallId = generateCallId();
+            answerBtn.style.display = 'none';
+            callerName.textContent = 'Group Call';
+            callStatus.textContent = `Starting ${mode} call...`;
+            callScreen.classList.add('active');
+
+            try {
+                const constraints = {
+                    audio: true,
+                    video: mode === 'video' ? { facingMode: 'user' } : false
+                };
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                localVideo.srcObject = localStream;
+
+                setupPeerConnection();
+
+                const offerOptions = {
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: mode === 'video'
+                };
+                const offer = await peerConnection.createOffer(offerOptions);
+                await peerConnection.setLocalDescription(offer);
+                console.log('📤 Sending offer (callId:', currentCallId, ')');
+                console.log('📤 Offer SDP:', offer.sdp);
+                sendSignal({
+                    callId: currentCallId,
+                    cmd: 'offer',
+                    sdp: peerConnection.localDescription,
+                    caller: myName,
+                    callMode: mode
+                });
+                callStatus.textContent = 'Ringing...';
+            } catch (e) {
+                alert('Could not access camera/microphone.\n' + e.message);
+                closeCallUI();
+                console.error(e);
+            }
+        }
+
+        function setupPeerConnection() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            if (localStream) {
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            }
+
+            peerConnection.ontrack = (event) => {
+                console.log('📹 Remote stream received');
+                remoteVideo.srcObject = event.streams[0];
+                callStatus.textContent = 'Connected!';
+                callStatus.style.color = '#00a884';
+                // Add any pending candidates that arrived before remote description
+                if (pendingCandidates.length && peerConnection.remoteDescription) {
+                    for (const candidate of pendingCandidates) {
+                        peerConnection.addIceCandidate(candidate).catch(e => console.warn('Failed to add pending candidate', e));
+                    }
+                    pendingCandidates = [];
+                }
+            };
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('🧊 Sending ICE candidate:', event.candidate);
+                    sendSignal({
+                        callId: currentCallId,
+                        candidate: event.candidate
+                    });
+                } else {
+                    console.log('🧊 ICE gathering complete');
+                }
+            };
+
+            peerConnection.oniceconnectionstatechange = () => {
+                console.log('ICE state:', peerConnection.iceConnectionState);
+                if (peerConnection.iceConnectionState === 'connected') {
+                    callStatus.textContent = 'Connected!';
+                    callStatus.style.color = '#00a884';
+                } else if (peerConnection.iceConnectionState === 'disconnected' ||
+                           peerConnection.iceConnectionState === 'failed') {
+                    hangupCall();
+                }
+            };
+
+            peerConnection.onicecandidateerror = (e) => {
+                console.warn('ICE candidate error', e);
+            };
+        }
+
+        async function handleIncomingSignaling(data, fromUser) {
+            console.log('🔔 Handling signal from', fromUser, data);
+
+            // If we have a callId, ensure it matches the current call (if any)
+            if (data.callId && currentCallId && data.callId !== currentCallId) {
+                console.log('⚠️ Ignoring signal for different callId:', data.callId);
+                return;
+            }
+
+            if (data.cmd === 'offer') {
+                if (callActive) {
+                    sendSignal({ callId: data.callId, cmd: 'busy' });
+                    return;
+                }
+                // New incoming call
+                callActive = true;
+                isCaller = false;
+                callType = data.callMode || 'voice';
+                currentCallId = data.callId;
+                answerBtn.style.display = 'flex';
+                callerName.textContent = fromUser;
+                callStatus.textContent = `${callType === 'video' ? '📹' : '📞'} Incoming call...`;
+                callScreen.classList.add('active');
+
+                try {
+                    const constraints = {
+                        audio: true,
+                        video: callType === 'video' ? { facingMode: 'user' } : false
+                    };
+                    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    localVideo.srcObject = localStream;
+                    setupPeerConnection();
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                    console.log('✅ Remote description set for offer');
+                    // Add any candidates that arrived before remote description
+                    if (pendingCandidates.length) {
+                        for (const candidate of pendingCandidates) {
+                            await peerConnection.addIceCandidate(candidate).catch(e => console.warn('Failed to add pending candidate', e));
+                        }
+                        pendingCandidates = [];
+                    }
+                } catch (e) {
+                    console.error('Incoming call setup failed', e);
+                    hangupCall();
+                }
+            } else if (data.sdp) {
+                // This is an answer – set remote description
+                if (peerConnection && !peerConnection.currentRemoteDescription) {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                    console.log('✅ Remote description set for answer');
+                    // Add any pending candidates
+                    if (pendingCandidates.length) {
+                        for (const candidate of pendingCandidates) {
+                            await peerConnection.addIceCandidate(candidate).catch(e => console.warn('Failed to add pending candidate', e));
+                        }
+                        pendingCandidates = [];
+                    }
+                }
+            } else if (data.candidate) {
+                if (peerConnection) {
+                    if (peerConnection.remoteDescription) {
+                        try {
+                            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                            console.log('🧊 ICE candidate added');
+                        } catch(e) {
+                            console.warn('ICE candidate error', e);
+                        }
+                    } else {
+                        pendingCandidates.push(new RTCIceCandidate(data.candidate));
+                        console.log('🧊 Candidate stored (waiting for remote description)');
+                    }
+                }
+            } else if (data.cmd === 'hangup') {
+                console.log('📞 Hangup received');
+                closeCallUI();
+            } else if (data.cmd === 'busy') {
+                callStatus.textContent = 'User is busy';
+                setTimeout(closeCallUI, 1500);
+            }
+        }
+
+        async function answerCall() {
+            if (!peerConnection) return;
+            answerBtn.style.display = 'none';
+            callStatus.textContent = 'Connecting...';
+            try {
+                const answerOptions = {
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: callType === 'video'
+                };
+                const answer = await peerConnection.createAnswer(answerOptions);
+                await peerConnection.setLocalDescription(answer);
+                console.log('📤 Sending answer');
+                console.log('📤 Answer SDP:', answer.sdp);
+                sendSignal({
+                    callId: currentCallId,
+                    sdp: peerConnection.localDescription
+                });
+            } catch (e) {
+                console.error('Answer failed', e);
+                hangupCall();
+            }
+        }
+
+        function hangupCall() {
+            console.log('📞 Hanging up');
+            if (callActive) {
+                sendSignal({ callId: currentCallId, cmd: 'hangup' });
+            }
+            closeCallUI();
+        }
+
+        function closeCallUI() {
+            callActive = false;
+            pendingCandidates = [];
+            currentCallId = null;
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+                localStream = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            remoteVideo.srcObject = null;
+            localVideo.srcObject = null;
+            callScreen.classList.remove('active');
+            answerBtn.style.display = 'none';
+            callStatus.style.color = '';
+            isCaller = false;
+            isMuted = false;
+            muteBtn.textContent = '🔊';
+            muteBtn.classList.remove('muted');
+        }
+
+        function toggleMute() {
+            if (!localStream) return;
+            isMuted = !isMuted;
+            localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+            muteBtn.textContent = isMuted ? '🔇' : '🔊';
+            muteBtn.classList.toggle('muted', isMuted);
+        }
+
+        // ============================================================
+        //  INIT
+        // ============================================================
+        usernameInput.focus();
+        console.log('💬 WhatsApp clone (host‑only ICE, detailed logging).');
+        console.log('ℹ️  If the call still fails, open the browser console and share the logs.');
+    </script>
+</body>
+</html>
