@@ -4,23 +4,23 @@ import os
 from datetime import datetime, timedelta
 import threading
 import time
-import socket
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Note: In production on Railway, these are in-memory and will reset 
+# if the container restarts.
 messages = []
 active_users = {}
+
 def auto_delete_old_messages():
     while True:
         now = datetime.utcnow()
         cutoff = now - timedelta(minutes=5)
         global messages
-        before = len(messages)
         messages = [m for m in messages if datetime.fromisoformat(m['timestamp']) > cutoff]
-        if len(messages) != before:
-            print(f"🧹 Auto-delete: removed {before - len(messages)} old messages")
-        time.sleep(30)
+        time.sleep(60)
 
 thread = threading.Thread(target=auto_delete_old_messages, daemon=True)
 thread.start()
@@ -35,16 +35,15 @@ def register_user():
     username = data.get('username', '').strip()
     if username and username not in active_users:
         active_users[username] = datetime.utcnow().isoformat()
-        print(f"✅ User registered: {username}")
         return jsonify({'status': 'success', 'users': list(active_users.keys())})
     return jsonify({'status': 'error'}), 400
 
 @app.route('/get_users', methods=['GET'])
 def get_users():
     now = datetime.utcnow()
+    # Remove users inactive for more than 60 seconds
     inactive = [u for u, ts in active_users.items() if (now - datetime.fromisoformat(ts)).total_seconds() > 60]
     for u in inactive:
-        print(f"🚪 User inactive: {u}")
         del active_users[u]
     return jsonify(list(active_users.keys()))
 
@@ -70,68 +69,31 @@ def send_message():
     messages.append(msg)
     if len(messages) > 500:
         messages[:] = messages[-500:]
-    print(f"📩 New message: {msg_type} from {username} (target: {data.get('target', 'none')})")
-
     return jsonify({'status': 'success'}), 200
 
 @app.route('/get_messages', methods=['GET'])
 def get_messages():
-    print(f"📨 GET /get_messages -> returning {len(messages)} messages")
     return jsonify(messages)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
-        return jsonify({'status': 'error', 'msg': 'No file'}), 400
+        return jsonify({'status': 'error'}), 400
     file = request.files['file']
     if file.filename == '':
-        return jsonify({'status': 'error', 'msg': 'No file selected'}), 400
+        return jsonify({'status': 'error'}), 400
 
     ext = file.filename.rsplit('.', 1)[-1] if '.' in file.filename else ''
-    new_name = f"{uuid.uuid4().hex}.{ext}" if ext else uuid.uuid4().hex
+    new_name = f"{uuid.uuid4().hex}.{ext}"
     save_path = os.path.join(app.config['UPLOAD_FOLDER'], new_name)
     file.save(save_path)
-    url = f"/static/uploads/{new_name}"
-    return jsonify({'status': 'success', 'url': url})
+    return jsonify({'status': 'success', 'url': f"/static/uploads/{new_name}"})
 
 @app.route('/static/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-@app.route('/delete_message', methods=['POST'])
-def delete_message():
-    data = request.json
-    message_id = data.get('id')
-    username = data.get('username')
-    if not message_id or not username:
-        return jsonify({'status': 'error'}), 400
-
-    for i, msg in enumerate(messages):
-        if msg.get('id') == message_id:
-            if msg.get('username') != username:
-                return jsonify({'status': 'error', 'msg': 'Not your message'}), 403
-            messages.pop(i)
-            delete_signal = {
-                'id': str(uuid.uuid4()),
-                'username': 'system',
-                'text': message_id,
-                'type': 'delete',
-                'timestamp': datetime.utcnow().isoformat()
-            }
-            messages.append(delete_signal)
-            if len(messages) > 500:
-                messages[:] = messages[-500:]
-            print(f"🗑️  Deleted message {message_id} by {username}")
-            return jsonify({'status': 'success'})
-    return jsonify({'status': 'error', 'msg': 'Message not found'}), 404
-
+# Railway handles port automatically
 if __name__ == '__main__':
-    hostname = socket.gethostname()
-    local_ip = socket.gethostbyname(hostname)
-    print("\n" + "="*50)
-    print("💬 WhatsApp-like Chat (HTTPS) – with logging")
-    print(f"📍 https://127.0.0.1:5000")
-    print(f"📍 https://{local_ip}:5000")
-    print("📌 Accept the certificate warning in your browser.")
-    print("="*50 + "\n")
-    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context='adhoc')
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
