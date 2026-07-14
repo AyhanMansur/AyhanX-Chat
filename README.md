@@ -111,5 +111,4 @@ const rtcConfig = {
 
 * **Data Persistence:** The application uses in-memory storage for messages and users. Server restarts or container redeployments will clear the current chat history and online user list.
 
----
 ## Developed By **Ayhan Mansur**
