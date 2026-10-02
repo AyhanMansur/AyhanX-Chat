@@ -1,114 +1,151 @@
 
-# 💬 Real-Time Chat & WebRTC Calling
+<div align="center">
 
-A high-performance, Flask-powered communication platform featuring instant messaging, media sharing, and peer-to-peer (P2P) WebRTC calling capabilities. Designed for speed, ease of use, and seamless real-time connectivity.
+# 🤖 AyhanX-Chat
 
-## 🚀 Key Features
+### Real-Time Chat & WebRTC Calling — Deploy Anywhere
 
-*   **⚡ Real-Time Messaging:** Instant delivery with an optimized message queue.
-*   **📞 WebRTC Calling:** Seamless P2P audio and video communication.
-*   **🖼️ Media Sharing:** Built-in support for image uploads and file storage.
-*   **👤 Presence Tracking:** Real-time monitoring of active users with auto-expiry.
-*   **🧹 Auto-Cleanup:** Automatic message rotation to ensure system performance.
-*   **☁️ Cloud Ready:** Fully Dockerized and optimized for platforms like Railway.
+A high-performance, Flask-powered communication platform featuring instant messaging, media sharing, and peer-to-peer (P2P) WebRTC calling.
 
----
+**Designed for speed. Built for connectivity. Ready for the cloud.**
 
-## 🛠 Technical Stack
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app/)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
-*   **Backend:** Python 3.11, Flask, Gunicorn
-*   **Frontend:** HTML5, CSS3, JavaScript (WebRTC API)
-*   **Concurrency:** Threading (for auto-cleanup and background tasks)
-*   **Deployment:** Docker, Railway
+</div>
 
 ---
 
-## 📂 Project Structure
+## ✨ Key Features
 
-```text
-├── app.py              # Main Flask application logic
-├── Dockerfile          # Container configuration
-├── requirements.txt    # Python dependencies
-├── Procfile            # Deployment instructions for Railway
-├── static/             # Assets and uploads
-│   └── uploads/        # User-uploaded media
-└── templates/          # HTML interfaces
-    └── index.html      # Main chat application UI
+| Feature | Description |
+|---|---|
+| ⚡ **Real-Time Messaging** | Instant delivery with an optimized message queue |
+| 🎥 **WebRTC Calling** | Seamless P2P audio and video communication |
+| 📸 **Media Sharing** | Built-in support for image uploads and file storage |
+| 👥 **Presence Tracking** | Real-time monitoring of active users with auto-expiry |
+| 🧹 **Auto-Cleanup** | Automatic message rotation to ensure system performance |
+| ☁️ **Cloud Ready** | Fully Dockerized and optimized for platforms like Railway |
 
+---
+
+## 🛠️ Technical Stack
+
+<div align="center">
+
+| Layer | Technology |
+|---|---|
+| **Backend** | Python 3.11 · Flask · Gunicorn |
+| **Frontend** | HTML5 · CSS3 · JavaScript (WebRTC API) |
+| **Concurrency** | Threading (auto-cleanup & background tasks) |
+| **Deployment** | Docker · Railway |
+
+</div>
+
+---
+
+## 📁 Project Structure
+
+```
+AyhanX-Chat/
+├── app.py                  # Main Flask application logic
+├── Dockerfile              # Container configuration
+├── requirements.txt        # Python dependencies
+├── Procfile                # Deployment instructions for Railway
+├── static/
+│   └── uploads/            # User-uploaded media
+└── templates/
+    └── index.html          # Main chat application UI
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-* Python 3.11+
-* Docker (if deploying via container)
+- Python **3.11+**
+- Docker *(if deploying via container)*
 
-### Local Setup
+### 🖥️ Local Setup
 
-1. Clone the repository:
 ```bash
-git clone [https://github.com/yourusername/your-repo-name.git](https://github.com/yourusername/your-repo-name.git)
-cd your-repo-name
+# 1. Clone the repository
+git clone https://github.com/AyhanMansur/AyhanX-Chat.git
+cd AyhanX-Chat
 
-```
-
-
-2. Install dependencies:
-```bash
+# 2. Install dependencies
 pip install -r requirements.txt
 
-```
-
-
-3. Run the application:
-```bash
+# 3. Run the application
 python app.py
 
+# 4. Open in your browser
+# https://127.0.0.1:5000
 ```
 
-
-4. Visit https://127.0.0.1:5000 in your browser. Note: You must accept the SSL security warning as the app uses a local self-signed certificate for development.
+> ⚠️ **Note:** You must accept the SSL security warning — the app uses a local self-signed certificate for development.
 
 ---
 
-## Docker Deployment
-
-To build and run the project using Docker:
+## 🐳 Docker Deployment
 
 ```bash
 # Build the image
-docker build -t chat-app .
+docker build -t ayhanx-chat .
 
 # Run the container
-docker run -p 5000:5000 chat-app
-
+docker run -p 5000:5000 ayhanx-chat
 ```
 
 ---
 
-## Project Configuration
+## ⚙️ Configuration
 
-* **Port:** The application is hardcoded to port 5000.
-* **Storage:** Uploaded files are stored in `static/uploads/`.
-* **Signaling:** The app uses an in-memory `message_queue`. Signals (offers, answers, ICE candidates) are stored temporarily and cleared upon retrieval to maintain low-latency P2P handshakes.
+| Setting | Value |
+|---|---|
+| **Port** | Hardcoded to `5000` |
+| **Storage** | Uploaded files → `static/uploads/` |
+| **Signaling** | In-memory `message_queue` — offers, answers, and ICE candidates are stored temporarily and cleared upon retrieval for low-latency P2P handshakes |
 
 ---
 
-## Important Notes
+## 📝 Important Notes
 
-* **Security:** This app uses `ssl_context='adhoc'` for local development. When deploying to production (like Railway), the platform will provide valid SSL/HTTPS, which is mandatory for accessing camera/microphone hardware.
-* **WebRTC Connectivity:** If testing across different networks (e.g., mobile data vs. Wi-Fi), ensure you update your `RTCPeerConnection` configuration to include STUN servers:
-```javascript
-const rtcConfig = {
-    iceServers: [{ urls: 'stun:stun1.l.google.com:19302' }]
-};
+> **🔒 Security**
+> The app uses `ssl_context='adhoc'` for local development. When deploying to production (e.g., Railway), the platform provides valid SSL/HTTPS — **mandatory** for accessing camera/microphone hardware.
 
+> **🌐 WebRTC Connectivity**
+> If testing across different networks (mobile data vs. Wi-Fi), add STUN servers to your `RTCPeerConnection` config:
+> ```javascript
+> const rtcConfig = {
+>   iceServers: [{ urls: 'stun:stun1.l.google.com:19302' }]
+> };
+> ```
+
+> **💾 Data Persistence**
+> Messages and users are stored in memory. Server restarts or container redeployments will clear chat history and the online user list.
+
+---
+
+## 🌐 Deploy to Railway
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ayhanx-chat)
+
+---
+
+<div align="center">
+
+## 👨‍💻 Developed By
+
+**Ayhan Mansur**
+
+[![GitHub](https://img.shields.io/badge/GitHub-AyhanMansur-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/AyhanMansur)
+
+⭐ **If you find this project useful, give it a star!** ⭐
+
+</div>
 ```
-
-
-* **Data Persistence:** The application uses in-memory storage for messages and users. Server restarts or container redeployments will clear the current chat history and online user list.
-
-## Developed By **Ayhan Mansur**
