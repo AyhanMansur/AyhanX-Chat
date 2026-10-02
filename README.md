@@ -141,7 +141,7 @@ docker run -p 5000:5000 ayhanx-chat
 
 **Ayhan Mansur**
 
-[![GitHub](https://img.shields.io/badge/GitHub-AyhanMansur-181717?style=for-the-badge&logo=github&logoColor=white)]
+![GitHub](https://img.shields.io/badge/GitHub-AyhanMansur-181717?style=for-the-badge&logo=github&logoColor=white)
 
 ⭐ **If you find this project useful, give it a star!** ⭐
 
