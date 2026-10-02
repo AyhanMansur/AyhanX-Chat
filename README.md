@@ -9,11 +9,10 @@ A high-performance, Flask-powered communication platform featuring instant messa
 
 **Designed for speed. Built for connectivity. Ready for the cloud.**
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app/)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+<p align="center"> 
+  <img src="https://img.shields.io/badge/Based-Docker-2496ED?logo=docker" /> 
+  <img src="https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway" /> 
+</p>
 
 </div>
 
@@ -132,10 +131,9 @@ docker run -p 5000:5000 ayhanx-chat
 ---
 
 ## 🌐 Deploy to Railway
-
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ayhanx-chat)
-
----
+<p align="center"> 
+  <img src="https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway" /> 
+</p>
 
 <div align="center">
 
@@ -143,9 +141,8 @@ docker run -p 5000:5000 ayhanx-chat
 
 **Ayhan Mansur**
 
-[![GitHub](https://img.shields.io/badge/GitHub-AyhanMansur-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/AyhanMansur)
+[![GitHub](https://img.shields.io/badge/GitHub-AyhanMansur-181717?style=for-the-badge&logo=github&logoColor=white)]
 
 ⭐ **If you find this project useful, give it a star!** ⭐
 
 </div>
-```
